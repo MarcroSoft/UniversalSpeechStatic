@@ -2,7 +2,7 @@
 #define ____UNIVERSAL_SPEECH_H__
 #if defined __WIN32 || defined __WIN64 || defined _WIN32 || defined _WIN64
 #define ____WINDOWS____
-#define export __declspec(dllexport) __cdecl
+#    define export __cdecl                  /* statisk lib */
 #include<windows.h> // for wchar_t
 typedef wchar_t ____wchar_t;
 #else

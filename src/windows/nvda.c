@@ -9,7 +9,7 @@ Please refer to the readme file provided with the package for more information.
 #include "encoding-conversion.h"
 
 const wchar_t* composePath (const wchar_t* dll);
-BOOL __declspec(dllexport) FindProcess (const char* needle, char* buf, size_t bufsize);
+BOOL FindProcess (const char* needle, char* buf, size_t bufsize);
 BOOL GetProcessVersionInfo (const char* pfn, int mode, char* buf, int buflen);
 
 static HINSTANCE nvda = NULL;

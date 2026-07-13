@@ -1,52 +1,47 @@
-LIBNAME=UniversalSpeech
-DEFINES=$(options)
+# Makefile til statisk UniversalSpeech med -Os og sections
 
-ifeq ($(OS),Windows_NT)
-EXT_EXE=.exe
-EXT_LIB=.dll
-LDFLAGS=-Wl,--add-stdcall-alias -Wl,--enable-stdcall-fixup -lole32 -loleaut32 -luuid -lpsapi -lversion
-DLLDEFS=src/windows/main.def
-SRCS=$(wildcard src/windows/*.c)
+CC      = gcc
+AR      = ar
+ARFLAGS = rcs
+
+# Optimering og sektioner (samme spare-flags som resten af stakken)
+CFLAGS_COMMON = -std=gnu99 -Wall -Wextra -Os -ffunction-sections -fdata-sections \
+	-fno-ident -fno-asynchronous-unwind-tables
+
+# Her kan du styre debug/release
+ifdef DEBUG
+    CFLAGS  = $(CFLAGS_COMMON) -g -DDEBUG
+    SUFFIX  = d
 else
-EXT_EXE=
-EXT_LIB=.so
-LDFLAGS=
-DLLDEFS=
-SRCS=
+    CFLAGS  = $(CFLAGS_COMMON) -DNDEBUG
+    SUFFIX  =
 endif
 
-ifeq ($(mode),release)
-NAME_SUFFIX=
-DEFINES += RELEASE
-CCOPTFLAGS=-s -O3
-else
-NAME_SUFFIX=d
-DEFINES += DEBUG
-CCOPTFLAGS=-g
-endif
+# Biblioteksnavn
+LIBNAME  = libUniversalSpeechStatic$(SUFFIX).a
+OBJDIR   = obj$(SUFFIX)
 
-LIBRARY=$(LIBNAME)$(NAME_SUFFIX)$(EXT_LIB)
-OBJDIR=obj$(NAME_SUFFIX)/
+# Kilder. Udeladt med vilje:
+#  - src/java/      (JNI-binding, ubrugt i statisk C-brug)
+#  - screenReaderAPICompat.c (dll-eksportfacade for gamle ScreenReaderAPI.dll,
+#    intet internt kalder den, og den hardcoder __declspec(dllexport))
+SRCS_CORE = $(wildcard src/*.c)
+SRCS_WIN  = $(filter-out src/windows/screenReaderAPICompat.c,$(wildcard src/windows/*.c))
 
-CC=gcc
-CCFLAGS=-std=gnu99 -Wextra $(addprefix -D,$(DEFINES)) -mthreads
-LDFLAGSB=-shared -static-libgcc -Wl,--out-implib,lib$(LIBNAME)$(NAME_SUFFIX).a $(LDFLAGS)
+SRCS = $(SRCS_CORE) $(SRCS_WIN)
+OBJS = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRCS))
 
-SRCS+=$(wildcard src/*.c) $(wildcard src/java/*.c)
-OBJS=$(addprefix $(OBJDIR),$(SRCS:.c=.o))
-PERCENT=%
+.PHONY: all clean
 
-all: $(LIBRARY)
+all: $(LIBNAME)
 
-.PHONY: $(LIBRARY)
+$(LIBNAME): $(OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+# Generel regel for objektfiler
+$(OBJDIR)/%.o: src/%.c $(wildcard include/*.h) $(wildcard src/*.h) $(wildcard src/windows/*.h)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -Iinclude -Isrc -c $< -o $@
 
 clean:
-	rm -r $(OBJDIR)
-
-$(LIBRARY): $(OBJS) $(DLLDEFS)
-	@$(CC) $(CCFLAGS) $(CCOPTFLAGS) -o $@ $^ $(LDFLAGSB)
-
-$(OBJDIR)%.o: %.c $(wildcard %.h) $(wildcard include/*.h)
-	@mkdir.exe -p $(dir $@)
-	@$(CC) $(CCFLAGS) $(CCOPTFLAGS) -c -o $@ $<
-
+	@rm -rf $(OBJDIR) $(LIBNAME)

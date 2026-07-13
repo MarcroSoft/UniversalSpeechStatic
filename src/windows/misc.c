@@ -14,9 +14,11 @@ Please refer to the readme file provided with the package for more information.
 
 const wchar_t* composePath (const wchar_t* dll) {
 static wchar_t path[300];
-GetModuleFileNameW(GetModuleHandleW(L"UniversalSpeech.dll"), path, 300);
+// NULL = app.exe (statisk build): klient-dll'er soeges ved siden af exe'en
+GetModuleFileNameW(NULL, path, 300);
 wchar_t* c = wcsrchr(path, L'\\');
-swprintf(c+1, (path-c)-3, L"%s", dll);
+if (!c) return dll;
+swprintf(c+1, 300-(c+1-path), L"%s", dll);
 return path;
 }
 

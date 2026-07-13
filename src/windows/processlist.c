@@ -34,7 +34,7 @@ if (FileExists(buf)) return TRUE;
 return FALSE;
 }
 
-HANDLE __declspec(dllexport) getProcessHandle (const char* needle, char* pfn, size_t pfnsz) {
+HANDLE getProcessHandle (const char* needle, char* pfn, size_t pfnsz) {
 static BOOL(*WINAPI LPQueryFullProcessImageNameA)(HANDLE,DWORD,LPSTR,PDWORD) = NULL;
 if (!LPQueryFullProcessImageNameA) {
 HANDLE kernel32 = LoadLibrary("kernel32");
@@ -65,7 +65,7 @@ CloseHandle(h);
 	return NULL;
 }
 
-BOOL __declspec(dllexport) FindProcess (const char* needle, char* buf, size_t bufsize) {
+BOOL FindProcess (const char* needle, char* buf, size_t bufsize) {
 HANDLE h = getProcessHandle(needle, buf, bufsize);
 if (h) CloseHandle(h);
 return !!h;
