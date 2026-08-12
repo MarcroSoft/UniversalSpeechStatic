@@ -53,11 +53,12 @@ DECLARE_INTERFACE_ (INTERFACE, IDispatch)
 // A count of how many objects our DLL has created (by some
 // app calling our IClassFactory object's CreateInstance())
 // which have not yet been Release()'d by the app
-static DWORD		OutstandingObjects;
+// LONG, ikke DWORD: InterlockedIncrement/Decrement tager LONG volatile*.
+static LONG		OutstandingObjects;
 
 // A count of how many apps have locked our DLL via calling our
 // IClassFactory object's LockServer()
-static DWORD		LockCount;
+static LONG		LockCount;
 
 // Where I store a pointer to my type library's TYPEINFO
 static ITypeInfo	*MyTypeInfo;
@@ -560,7 +561,7 @@ DWORD result = 1;
 				// Set its default value to some "friendly" string that helps
 				// a user identify what this COM DLL is for. Setting this value
 				// is optional. You don't need to do it
-				RegSetValueEx(hKey, 0, 0, REG_SZ, &ObjectDescription[0], sizeof(ObjectDescription));
+				RegSetValueEx(hKey, 0, 0, REG_SZ, (const BYTE *)&ObjectDescription[0], sizeof(ObjectDescription));
 
 				// Create a "CLSID" subkey whose default value is our IExample2 object's GUID (in ascii string format)
 				if (!(disposition = RegCreateKeyEx(hKey, "CLSID", 0, 0, REG_OPTION_NON_VOLATILE, KEY_WRITE, 0, &hKey2, &disposition)))
@@ -617,24 +618,35 @@ DWORD result = 1;
 					// Register the type lib (which is assumed to be a .TLB file in the same dir as this DLL)
 					if (!result)
 					{
+						static const char	TLB_NAME[] = "UniversalSpeech.tlb";
 						ITypeLib	*pTypeLib;
-						LPTSTR		str;
+						char		tlbpath[MAX_PATH];
+						size_t		dirlen;
 
-						str = &filename[0] + lstrlen(&filename[0]);
-						while (str > &filename[0] && *(str - 1) != '\\') --str;
-						lstrcpy(str, "UniversalSpeech.tlb");
+						// filename er const og tilhoerer kalderen - .tlb-stien
+						// bygges i en egen buffer i stedet for i den. Katalog-
+						// delen af dll-stien (til og med sidste backslash) plus
+						// tlb-navnet; passer det ikke, er det en fejl.
+						dirlen = lstrlen(&filename[0]);
+						while (dirlen > 0 && filename[dirlen - 1] != '\\') --dirlen;
+
+						if (dirlen + sizeof(TLB_NAME) > sizeof(tlbpath)) result = 1;
+						else
+						{
+						memcpy(&tlbpath[0], &filename[0], dirlen);
+						memcpy(&tlbpath[dirlen], &TLB_NAME[0], sizeof(TLB_NAME));
 
 					#ifdef UNICODE
-						if (!(result = LoadTypeLib(&filename[0], &pTypeLib)))
+						if (!(result = LoadTypeLib(&tlbpath[0], &pTypeLib)))
 						{
-							result = RegisterTypeLib(pTypeLib, &filename[0], 0);
+							result = RegisterTypeLib(pTypeLib, &tlbpath[0], 0);
 							pTypeLib->lpVtbl->Release(pTypeLib);
 						}
 					#else
 						{
 						wchar_t		wbuffer[MAX_PATH];
 
-						MultiByteToWideChar(CP_ACP, 0, &filename[0], -1, &wbuffer[0], MAX_PATH);
+						MultiByteToWideChar(CP_ACP, 0, &tlbpath[0], -1, &wbuffer[0], MAX_PATH);
 						if (!(result = LoadTypeLib(&wbuffer[0], &pTypeLib)))
 						{
 							result = RegisterTypeLib(pTypeLib, &wbuffer[0], 0);
@@ -642,6 +654,7 @@ DWORD result = 1;
 						}
 						}
 					#endif
+						}
 					}
 
 					if (!result)
@@ -658,6 +671,10 @@ return TRUE;
 registerDllCleanup();
 return FALSE;
 		}
+
+// Naaet hertil uden det succes-return ovenfor: registreringen blev
+// ikke gjort faerdig, saa det er ikke en succes.
+return FALSE;
 	}
 
 HRESULT __stdcall DllRegisterServer(void) {

@@ -835,7 +835,9 @@ HRESULT ConvertVariantTimeToFileTime(DATE date, FILETIME * pft)
 	if (date < VARIANT_FILE_TIME_DAY0) return E_INVALIDARG;
 	ftScalar = (ULONGLONG) ((date * FILE_TIME_ONE_DAY) + FILE_TIME_VARIANT_DAY0);
 
-	*pft = *((FILETIME *) &ftScalar);
+	/* memcpy frem for type-punning: en FILETIME* der peger paa en
+	   ULONGLONG bryder strict aliasing. */
+	memcpy(pft, &ftScalar, sizeof(*pft));
 
 	return NOERROR;
 }

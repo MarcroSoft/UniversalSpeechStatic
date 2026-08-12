@@ -76,7 +76,11 @@ DWORD dwSize=0, *dwLang=NULL;
 if (!VerQueryValue(verbuf, "\\VarFileInfo\\Translation", &dwLang, &dwSize)) return FALSE;
 char tmp[300]={0};
 snprintf(tmp, 299, "\\StringFileInfo\\%04x%04x\\%s", LOWORD(*dwLang), HIWORD(*dwLang), field);
-return VerQueryValue(verbuf, tmp, buf, buflen);
+// VerQueryValue vil have PUINT i sidste argument, ikke int*.
+UINT len = 0;
+if (!VerQueryValue(verbuf, tmp, buf, &len)) return FALSE;
+*buflen = (int)len;
+return TRUE;
 }
 
 BOOL GetProcessVersionInfo (const char* pfn, int mode, char* buf, int buflen) {

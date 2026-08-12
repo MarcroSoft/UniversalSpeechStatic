@@ -5,7 +5,16 @@ AR      = ar
 ARFLAGS = rcs
 
 # Optimering og sektioner (samme spare-flags som resten af stakken)
-CFLAGS_COMMON = -std=gnu99 -Wall -Wextra -Os -ffunction-sections -fdata-sections \
+#
+# -Wno-unused-parameter: com-interface.c og sapi.c implementerer COM-
+# vtabeller, hvor signaturen er dikteret af graensefladen (this, riid,
+# lcid ...). Ubrugte parametre er en foelge af det, ikke en fejl, og de
+# kan ikke fjernes. Slaaet fra her i forkens egen makefile, saa upstream-
+# filerne ikke skal fyldes med 42 (void)-kast, der ville stoeje ved
+# fremtidige rebases. Alle oevrige -Wall/-Wextra-advarsler er RETTET i
+# koden - bygget skal vaere helt tavst.
+CFLAGS_COMMON = -std=gnu99 -Wall -Wextra -Wno-unused-parameter -Os \
+	-ffunction-sections -fdata-sections \
 	-fno-ident -fno-asynchronous-unwind-tables
 
 # Her kan du styre debug/release
