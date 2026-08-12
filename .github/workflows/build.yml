@@ -9,22 +9,26 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      # Samme toolchain som MTC bygger denne fork med - se
-      # W64DEVKIT_VERSION/_SHA256 i MarcroSoft/MTC:ci/versions.env.
-      # Flyttes den der, flyttes den her.
-      W64DEVKIT_VERSION: 2.9.1
-      W64DEVKIT_SHA256: 91017cbbb8766cb9b3094a9a461213ed809e9f06aa678257bf9bec32fed6b157
 
     steps:
       - uses: actions/checkout@v7
+
+      # Versionen staar i ci/w64devkit.env, ikke her. Den fil spejler
+      # MTC's ci/versions.env, og MTC's CI fejler, hvis de skrider fra
+      # hinanden - se kommentaren i filen.
+      - name: Laes pinnet toolchain
+        shell: pwsh
+        run: |
+          Get-Content ci/w64devkit.env |
+            Where-Object { $_ -match '^[A-Z0-9_]+=' } |
+            ForEach-Object { $_ | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8 }
 
       - name: Cache w64devkit
         id: cache-devkit
         uses: actions/cache@v6
         with:
           path: C:\w64devkit
-          key: w64devkit-i686-${{ env.W64DEVKIT_VERSION }}
+          key: w64devkit-i686-${{ hashFiles('ci/w64devkit.env') }}
 
       - name: Hent w64devkit (i686 / 32-bit)
         if: steps.cache-devkit.outputs.cache-hit != 'true'
