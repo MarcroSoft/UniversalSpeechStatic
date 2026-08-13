@@ -35,7 +35,9 @@ jobs:
         shell: pwsh
         run: |
           $ver = $env:W64DEVKIT_VERSION
-          $url = "https://github.com/skeeto/w64devkit/releases/download/v$ver/w64devkit-x86-$ver.7z.exe"
+          $repo = $env:W64DEVKIT_REPO
+          if (-not $repo) { $repo = "skeeto/w64devkit" }
+          $url = "https://github.com/$repo/releases/download/v$ver/w64devkit-x86-$ver.7z.exe"
           Write-Host "henter $url"
           curl.exe -sSL -o "$env:RUNNER_TEMP\devkit.7z" $url
           $got = (Get-FileHash "$env:RUNNER_TEMP\devkit.7z" -Algorithm SHA256).Hash.ToLower()
