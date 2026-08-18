@@ -7,6 +7,7 @@ Please refer to the readme file provided with the package for more information.
 #include "../../include/UniversalSpeech.h"
 #include<windows.h>
 #include "disphelper.h"
+#include "../private.h"
 #include "encoding-conversion.h"
 
 void dhAutoInit (void);
@@ -76,7 +77,7 @@ return result;
 
 export BOOL jfwBrailleA (const char* str) {
 int len = strlen(str);
-char buf[len+20];
+char* buf = SR_STACK_ALLOC(char, len+20);
 buf[0] = 0;
 strcat(buf, "BrailleString(\"");
 strcat(buf, str);
@@ -90,7 +91,7 @@ return jfwRunFunctionA(buf);
 
 export BOOL jfwBrailleW (const wchar_t* str) {
 int len = wcslen(str);
-wchar_t buf[len+20];
+wchar_t* buf = SR_STACK_ALLOC(wchar_t, len+20);
 buf[0] = 0;
 wcscat(buf, L"BrailleString(\"");
 wcscat(buf, str);

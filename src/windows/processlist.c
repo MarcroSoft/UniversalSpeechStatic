@@ -12,6 +12,7 @@ Please refer to the readme file provided with the package for more information.
 #include <stdio.h>
 #include <stdlib.h>
 #include<string.h>
+#include "../private.h"
 
 #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 
@@ -87,7 +88,7 @@ BOOL GetProcessVersionInfo (const char* pfn, int mode, char* buf, int buflen) {
 DWORD dwHandle = 0, dwSize=0;
 dwSize = GetFileVersionInfoSize(pfn, &dwHandle);
 if (dwSize<=0) return FALSE;
-char verbuf[dwSize];
+char* verbuf = SR_STACK_ALLOC(char, dwSize);
 if (!GetFileVersionInfo(pfn, dwHandle, dwSize, verbuf)) return FALSE;
 switch(mode) {
 case 0 : case 1 : {

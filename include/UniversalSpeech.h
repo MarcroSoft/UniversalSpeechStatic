@@ -2,7 +2,15 @@
 #define ____UNIVERSAL_SPEECH_H__
 #if defined __WIN32 || defined __WIN64 || defined _WIN32 || defined _WIN64
 #define ____WINDOWS____
-#    define export __cdecl                  /* statisk lib */
+/* Static build: no dllexport. MSVC rejects a calling convention written
+   before the return type - "export int speechSay(...)" - which is how every
+   declaration below uses it, so there it expands to nothing and the default
+   cdecl applies anyway. */
+#    if defined(_MSC_VER)
+#        define export
+#    else
+#        define export __cdecl
+#    endif
 #include<windows.h> // for wchar_t
 typedef wchar_t ____wchar_t;
 #else
